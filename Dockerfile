@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml uv.lock ./
 
 COPY main.py ./
+COPY routers ./routers
+COPY schemas ./schemas
 
 EXPOSE 8000
 
