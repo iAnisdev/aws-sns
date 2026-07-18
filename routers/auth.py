@@ -16,8 +16,8 @@ COOKIE_SECURE = os.environ["COOKIE_SECURE"].lower() in {"1", "true", "yes", "on"
 
 TOKEN_EXPIRE_HOURS = {
     TokenPurpose.GENERAL: int(os.environ["GENERAL_TOKEN_EXPIRE_HOURS"]),
+    TokenPurpose.ADMIN: int(os.environ["ADMIN_TOKEN_EXPIRE_HOURS"]),
     TokenPurpose.LOGS: int(os.environ["LOGS_TOKEN_EXPIRE_HOURS"]),
-    TokenPurpose.OTHER: int(os.environ["OTHER_TOKEN_EXPIRE_HOURS"]),
 }
 
 
