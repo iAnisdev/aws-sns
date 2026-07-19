@@ -4,7 +4,13 @@ from fastapi import FastAPI
 
 from database.connection import Base, engine
 from models import AuthToken
-from routers.auth import router as auth_router
+from routers import (
+    apps_router,
+    auth_router,
+    health_router,
+    subscriptions_router,
+    topics_router,
+)
 
 
 @asynccontextmanager
@@ -17,8 +23,6 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(health_router)
 app.include_router(auth_router)
-
-
-@app.get("/")
-def read_root():
-    return {"health": "ok"}
+app.include_router(apps_router)
+app.include_router(topics_router)
+app.include_router(subscriptions_router)
