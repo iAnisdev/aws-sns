@@ -3,8 +3,12 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import jwt
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
+from database.connection import get_db
+from models.token import AuthToken
 from schemas.auth import TokenPurpose, TokenRequest, TokenResponse
 
 
@@ -26,21 +30,44 @@ TOKEN_EXPIRE_HOURS = {
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_token(request: TokenRequest, response: Response) -> TokenResponse:
+def create_token(
+    request: TokenRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
     session_id = str(uuid4())
     now = datetime.now(timezone.utc)
     expire_hours = TOKEN_EXPIRE_HOURS[request.purpose]
+    expired_at = now + timedelta(hours=expire_hours)
 
     token = jwt.encode(
         {
             "sid": session_id,
             "purpose": request.purpose.value,
             "iat": now,
-            "exp": now + timedelta(hours=expire_hours),
+            "exp": expired_at,
         },
         JWT_SECRET_KEY,
         algorithm=JWT_ALGORITHM,
     )
+
+    token_record = AuthToken(
+        session_id=session_id,
+        purpose=request.purpose.value,
+        created_at=now.replace(tzinfo=None),
+        expired_at=expired_at.replace(tzinfo=None),
+        is_valid=True,
+    )
+
+    try:
+        db.add(token_record)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not create token session",
+        ) from exc
 
     response.set_cookie(
         key="access_token",
